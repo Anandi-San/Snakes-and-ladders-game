@@ -1,20 +1,5 @@
-extends Node2D
-onready var ui_pertanyaan = $ui_pertanyaan
-
-# Declare member variables here. Examples:
-# var a = 2
-# var b = "text"
-var pname = 1
-var dicePose = [79.46,958.187]
-var playerRun = [0,0]
-var DiceFace = 0
-var localPos = [29.707,833.983]
-var countp1 = -1
-var countp2 = -1
-var snakeStart = [26,95,92,98,74,69,31,37]
-var snakeEnd = [5,75,70,36,53,49,7,22]
-var ladderStart = [2,61,72,33,27]
-var ladderEnd = [24,83,86,64,89]
+extends CanvasLayer
+var jawaban = false
 var questions = [
 	{
 		"question": "Apa output dari kode berikut?\nnumbers = [1, 2, 3, 4, 5]\ntotal = 0\nfor num in numbers:\n    total += num\nprint(total)",
@@ -99,107 +84,60 @@ var questions = [
 ]
 var currentQuestionIndex = 0
 var isWaitingForAnswer = false
- 
-onready var pathFinder = [$Path2D/Blue/Sprite,$Path2D/Red/Sprite]
+var event = null
+
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	$DiceFaces.show() # Replace with function body.
+	pass # Replace with function body.
 
-
+func generate(soal):
+	pass
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 #func _process(delta):
 #	pass
-
-func _on_Button_pressed():
-	$DiceMusic.play()
-	randomize()
-	DiceFace = randi() % 6 +1
-	$DiceFaces.set_frame(DiceFace - 1)
-
-	pname = !pname
-	var pathpos = $Path2D.get_curve().get_point_position(0)
-
-	if not pname:
-		$Label.text = "PLAYER 2"
-		countp2 += DiceFace
-#		countp2 = checkCount(countp2)
-		pathpos = $Path2D.get_curve().get_point_position(countp2)
-		pathpos.x -= localPos[0]
-		pathpos.y -= localPos[1]
-		pathpos.y += 5
-		pathFinder[1].position = pathpos
-		print(countp2)
-		checkEvent(countp2)
-		checkwin(countp2)
-	else:
-		$Label.text = "PLAYER 1"
-		countp1 += DiceFace
-#		countp1 = checkCount(countp1)
-		pathpos = $Path2D.get_curve().get_point_position(countp1)
-		pathpos.x -= localPos[0]
-		pathpos.y -= localPos[1]
-		pathFinder[0].position = pathpos
-		print(countp1)
-		checkEvent(countp1)
-		checkwin(countp1)
-		
-func checkEvent(position):
-	print("CHECK EVENT ", position)
-	for i in range(snakeStart.size()):
-		if position == snakeStart[i]:
-			ui_pertanyaan.showQuestion(i, "snake")
-			print("ada snake")
-			return
-	for j in range(ladderStart.size()):
-		if position == ladderStart[j]:
-			ui_pertanyaan.showQuestion(j, "ladder")
-			print("ada ladder")
-			return
-			
-func doEvent():
-	var pathpos = $Path2D.get_curve().get_point_position(0)
-
-	if not pname:
-		$Label.text = "PLAYER 2"
-		countp2 = checkCount(countp2)
-		pathpos = $Path2D.get_curve().get_point_position(countp2)
-		pathpos.x -= localPos[0]
-		pathpos.y -= localPos[1]
-		pathpos.y += 5
-		pathFinder[1].position = pathpos
-		checkwin(countp2)
-	else:
-		$Label.text = "PLAYER 1"
-		countp1 = checkCount(countp1)
-		pathpos = $Path2D.get_curve().get_point_position(countp1)
-		pathpos.x -= localPos[0]
-		pathpos.y -= localPos[1]
-		pathFinder[0].position = pathpos
-		checkwin(countp1)
-
-func checkCount(c):
-	for i in len(snakeStart):
-		if c == snakeStart[i]:
-			return snakeEnd[i]
-	for j in len(ladderStart):
-		if c == ladderStart[j]:
-			return ladderEnd[j]	
-	return c
-
-func checkwin(c):
-	if c>=100:
-		if c == countp1:
-			$Label.text = "PLAYER 1 HAS WON THE GAME"
-		else:
-			$Label.text = "PLAYER 2 HAS WON THE GAME"
-		$DiceFaces/Button.disabled = true
-		
-
-
-
-func _on_Quit_pressed():
-	get_tree().quit()
+func showQuestion(index, _event):
+	$ColorRect/Label_notif.text = ""
+	print("SHOW QUESTION")
+	self.visible = true
+	currentQuestionIndex = index
+	isWaitingForAnswer = true
+	event = _event
+	print(questions.size())
+	var question = questions[rand_range(0,questions.size()-1)]
+	# Tampilkan pertanyaan dan opsi di GUI Anda, misalnya di panel atau label
+	$ColorRect/Panel/Label.text = question["question"]
+	$ColorRect/Button/Label.text = question["options"][0]
+	$ColorRect/Button2/Label.text = question["options"][1]
+	$ColorRect/Button3/Label.text = question["options"][2]
+	$ColorRect/Button4/Label.text = question["options"][3]
 	
-func _on_Restart_pressed():
-	get_tree(). reload_current_scene()  # Replace with function body.
+func _on_AnswerButton_pressed(option):
+	if isWaitingForAnswer:
+		isWaitingForAnswer = false
+		var question = questions[currentQuestionIndex]
+		var correctAnswerIndex = question["correct_answer_index"]
+		if option == correctAnswerIndex:
+			# Jawaban benar, lakukan aksi yang sesuai (naik tangga)
+			if event == "ladder" :
+				$ColorRect/Label_notif.text = "Jawaban Benar, Naik Tangga!"
+			if event == "snake":
+				$ColorRect/Label_notif.text = "Jawaban Benar, Tidak Turun!"
+			jawaban = true
+		else:
+			# Jawaban salah, lakukan aksi yang sesuai (turun ular)
+			if event == "ladder" :
+				$ColorRect/Label_notif.text = "Jawaban Salah, Tidak Naik Tangga!"
+			if event == "snake":
+				$ColorRect/Label_notif.text = "Jawaban Salah, Turun Ular!"
+			jawaban = false
+		$Timer.start(3)
+
+
+func _on_Timer_timeout():
+	self.visible = false
+	if event == "ladder" and jawaban == true:
+		get_parent().doEvent()
+	if event == "snake" and jawaban == false:
+		get_parent().doEvent()
+	pass # Replace with function body.
